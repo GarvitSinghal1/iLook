@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iLook</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>iLook - AI Analysis</h1>
+
+    <!-- Step 1: Upload image -->
+    <div id="image-input">
+      <input type="file" id="image-upload" accept="image/*">
+      <img id="selected-image" src="" alt="Selected Image">
+    </div>
+
+    <!-- Step 2: Pick mode -->
+    <div id="mode-selection">
+      <button id="face-rating-btn">Face Rating</button>
+      <button id="current-look-btn">Current Look</button>
+    </div>
+
+    <!-- Progress -->
+    <div id="progress">
+      <p>Analyzing...</p>
+      <div class="progress-bar">
+        <div class="progress-bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+      <h2>Analysis Results</h2>
+      <div id="results-content"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
