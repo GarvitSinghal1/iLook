@@ -10,29 +10,32 @@
   <div class="container">
     <h1>iLook - AI Analysis</h1>
 
-    <!-- Step 1: Upload image -->
-    <div id="image-input">
+    <!-- Step 1: Upload -->
+    <div id="upload-step">
+      <p>Select an image to analyze:</p>
       <input type="file" id="image-upload" accept="image/*">
-      <img id="selected-image" src="" alt="Selected Image">
+      <img id="selected-image" src="" alt="Selected Image" style="display:none;">
     </div>
 
-    <!-- Step 2: Pick mode -->
-    <div id="mode-selection">
+    <!-- Step 2: Mode Selection -->
+    <div id="mode-selection" style="display:none;">
+      <p>Choose analysis mode:</p>
       <button id="face-rating-btn">Face Rating</button>
       <button id="current-look-btn">Current Look</button>
     </div>
 
     <!-- Progress -->
-    <div id="progress">
+    <div id="progress" style="display:none;">
       <p>Analyzing...</p>
       <div class="progress-bar">
-        <div class="progress-bar-fill"></div>
+        <div class="progress-bar-fill" style="width:0%;"></div>
       </div>
     </div>
 
     <!-- Results -->
-    <div id="results">
+    <div id="results" style="display:none;">
       <h2>Analysis Results</h2>
+      <div id="star-rating"></div>
       <div id="results-content"></div>
     </div>
   </div>
