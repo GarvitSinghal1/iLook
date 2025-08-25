@@ -2,7 +2,7 @@ console.log("Script loaded!");
 
 // ---------- CONFIG ----------
 // your backend URL (from Render)
-const BACKEND_URL = "https://ilook-backend.onrender.com/";
+const BACKEND_URL = "https://ilook-backend.onrender.com";
 
 // ---------- UI HOOKS ----------
 const faceRatingBtn   = document.getElementById('face-rating-btn');
@@ -149,3 +149,4 @@ function renderStars(rating) {
   for (let i = 1; i <= 5; i++) stars += i <= starsOutOfFive ? "⭐" : "☆";
   return stars + ` (${rating}/10)`;
 }
+
